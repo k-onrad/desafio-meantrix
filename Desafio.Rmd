@@ -1,0 +1,108 @@
+---
+title: "Desafio Meantrix"
+author: "Gustavo Konrad"
+date: "1/23/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T)
+```
+
+## Pré-processamento
+Começamos carregando pacotes que iremos utilizar e importando os dados para pré-processamento.
+```{r message=FALSE}
+library(readr)
+library(caret)
+library(e1071)
+library(ggplot2)
+library(corrplot)
+HR_Employee <- read_csv("HR-Employee.csv")
+summary(HR_Employee)
+```
+
+
+### Codificação
+Uma rápida inspeção revela que várias váriaveis independentes são categóricas e precisam ser codificadas para dummy variables. A função dummyVars do pacote caret ajuda a codificar rapidamente o dataframe, com exceção da variável Over18 que precisa ser codificada manualmente por ter apenas uma categoria.
+
+```{r}
+HR_Employee$Over18 <- ifelse(HR_Employee$Over18 == "Y", 1, 0)
+```
+
+Para codificar o restante evitando colinearidade perfeita, usamos dummyVars com fullRank = T.
+```{r}
+dmy <- dummyVars("~.", HR_Employee, fullRank=T)
+enc_HR <- data.frame(predict(dmy, HR_Employee))
+colnames(enc_HR)
+```
+
+
+### Variâncias próximas de zero
+Com as variáveis categóricas codificadas, podemos identificar correlações entre variáveis independentes. Antes disso, no entanto, vamos utilizar a função nearZeroVar do pacote caret para identificar se, além da variável Over18, temos outras variáveis com apenas um valor único.
+```{r}
+zeroVars <- nearZeroVar(enc_HR)
+summary(enc_HR[zeroVars])
+```
+
+A função nearZeroVar identifica, de maneira geral, variáveis com variância próxima de zero (que portanto adicionam pouca ou nenhuma informação adicional ao modelo). Podemos ver acima que a variável JobRoleHuman.Resources, possui variância baixa, mas não nula. Vamos remover apenas as features constantes.
+```{r}
+zeroVars <- zeroVars[-2]
+enc_HR <- enc_HR[-zeroVars]
+colnames(enc_HR)
+```
+
+### Correlações
+Podemos analisar correlações entre variáveis independentes e a variável AttritionYes.
+```{r}
+correlations <- cor(enc_HR)
+correlations["AttritionYes",]
+```
+
+Nenhuma correlação se sobressai além da correlação da variável com ela mesma. Muitas variáveis parecem contribuir em alguma medida para a variação em AttritionYes, com a variável OverTimeYes tendo a maior correlação.
+
+Podemos também plotar clusters de variáveis correlacionadas utilizando o pacote corrplot. Exportamos para png para melhor visualização.
+```{r fig.height=12, fig.width=21}
+corrMatrix <- corrplot(correlations, order="hclust", tl.cex=1)
+png("corrplot.png", width=1920, height=1080, units="px")
+```
+
+Identificamos correlações esperadas entre variáveis que indicam o tempo corrido desde algum evento (anos na companhia, anos desde a última promoção, etc). Correlações entre idade, tempo no mercado de trabalho e salário mensal também não são inesperadas. Caso tais correlações venham a ser problemáticas, ou caso queiramos experimentar com o modelo, podemos aplicar Principal Component Analysis para gerar features independentes entre si. No momento seguiremos com as features como estão.
+
+### Assimetria
+Para verificar se temos features com distribuições assimétricas, utilizamos a função skewness do pacote e1071.
+```{r}
+skewValues <- apply(enc_HR, 2, skewness)
+skewValues
+```
+
+AttritionYes, que codifica Attrition, nossa variável target, é uma das variáveis que apresenta assimetria. Plotamos sua frequência relativa para inspeção visual.
+```{r}
+ggplot(enc_HR, aes(x = AttritionYes)) + 
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  scale_y_continuous(labels = scales::percent) + 
+  geom_text(aes(label= scales::percent(..prop..), y=..prop..), stat="count", vjust = -.075) +
+  xlab("Attrition igual a 'Yes'") +
+  ylab("Frequências relativas") +
+  ggtitle("Frequência de Attrition igual a 'Yes'")
+```
+
+Fica evidente que Attrition é igual a "Yes" (ou AttritionYes == 1) em apenas 16% da população. Um algoritmo que estimasse Attrition = "No" para todo e qualquer caso teria, portanto, uma exatidão próxima de 84% neste dataset. 
+
+Na presença de variáveis com distribuições altamente assimétricas, poderíamos, caso fosse conveniente, aplicar a transformação Box-Cox para corrigir tal assimetria. Deixaremos nossas variáveis como estão em relação à sua simetria.
+
+### Centralização e normalização
+Por fim, vamos centralizar e normalizar o dataset para obter melhor comportamento em relação à certos algoritmos (por exemplo, algoritmos que envolvam otimização com método de gradiente ou similar).
+```{r message=FALSE}
+transform <- preProcess(enc_HR, method=c("center", "scale"))
+transformed_HR <- predict(transform, enc_HR)
+```
+
+
+### Exportando
+Podemos então exportar os dados para o formato csv, para continuar a modelagem em Python.
+```{r}
+write_csv(transformed_HR, "transformed_HR.csv")
+```
+

@@ -1,0 +1,8 @@
+{
+    "python.pythonPath": "/home/bl4nk/.local/share/virtualenvs/desafio_meantrix_012020-qw-sP34D/bin/python",
+    "python.linting.flake8Enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.mypyEnabled": false,
+    "python.linting.enabled": true,
+    "python.formatting.provider": "black"
+}
