@@ -54,13 +54,16 @@ colnames(enc_HR)
 ```
 
 ### Correlações
-Podemos analisar correlações entre variáveis independentes e a variável AttritionYes.
+Podemos analisar correlações entre variáveis independentes e a variável dependente AttritionYes.
 ```{r}
 correlations <- cor(enc_HR)
-correlations["AttritionYes",]
+attrition_corrs <- correlations["AttritionYes",][-2] # removendo autocorrelação
+attrition_corrs
+max(attrition_corrs)
+min(attrition_corrs)
 ```
 
-Nenhuma correlação se sobressai além da correlação da variável com ela mesma. Muitas variáveis parecem contribuir em alguma medida para a variação em AttritionYes, com a variável OverTimeYes tendo a maior correlação.
+Muitas variáveis parecem contribuir em alguma medida para a variação em AttritionYes, com a variável OverTimeYes tendo a maior correlação positiva - indicando que sobrecarregamento do funcionário pode ser um dos principais fatores para a saída do mesmo - e a variável TotalWorkingYears tendo a maior correlação negativa - indicando que funcionários que estão à mais tempo no mercado de trabalho podem ter menor disposição à sair do seu emprego atual.
 
 Podemos também plotar clusters de variáveis correlacionadas utilizando o pacote corrplot. Exportamos para png para melhor visualização.
 ```{r fig.height=12, fig.width=21}
