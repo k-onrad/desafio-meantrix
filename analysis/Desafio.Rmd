@@ -27,22 +27,23 @@ summary(HR_Employee)
 ### Variâncias próximas de zero
 Com as variáveis categóricas codificadas, podemos identificar correlações entre variáveis independentes. Antes disso, no entanto, vamos utilizar a função nearZeroVar do pacote caret para identificar se, além da variável Over18, temos outras variáveis com apenas um valor único.
 ```{r}
-zeroVars <- nearZeroVar(enc_HR)
-summary(enc_HR[zeroVars])
+zeroVars <- nearZeroVar(HR_Employee)
+summary(HR_Employee[zeroVars])
 ```
 
 A função nearZeroVar identifica, de maneira geral, variáveis com variância próxima de zero (que portanto adicionam pouca ou nenhuma informação adicional ao modelo). Podemos ver acima que a variável JobRoleHuman.Resources, possui variância baixa, mas não nula. Vamos remover apenas as features constantes.
 ```{r}
-zeroVars <- zeroVars[-2]
-enc_HR <- enc_HR[-zeroVars]
-colnames(enc_HR)
+HR_Employee <- HR_Employee[-zeroVars]
+colnames(HR_Employee)
 ```
 
 ### Correlações
-Podemos analisar correlações entre variáveis independentes e a variável dependente AttritionYes.
+Podemos analisar correlações entre variáveis independentes e a variável dependente Attrition, mas antes precisamos gerar dummy variables.
 ```{r}
+dmy <- dummyVars("~.", HR_Employee, fullRank=T)
+enc_HR <- data.frame(predict(dmy, HR_Employee))
 correlations <- cor(enc_HR)
-attrition_corrs <- correlations["Attrition",][-2] # removendo autocorrelação
+attrition_corrs <- correlations["AttritionYes",][-2] # removendo autocorrelação
 attrition_corrs
 max(attrition_corrs)
 min(attrition_corrs)
