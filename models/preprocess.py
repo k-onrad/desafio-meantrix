@@ -1,8 +1,7 @@
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
 
-def preprocessCsv(path, scaler=StandardScaler):
+def preprocessCsv(path):
     """
     Recebe o path do arquivo csv a ser pré-processado.
     Retorna tuple com numpy arrays de features e de variável target.
@@ -22,8 +21,5 @@ def preprocessCsv(path, scaler=StandardScaler):
     # Separando features e target variable.
     y = data["Attrition_Yes"]
     X = data.drop(columns=["Attrition_Yes"])
-
-    # Standardizando as features com standard scaling para melhor comportamento.
-    X = scaler().fit_transform(X)
 
     return (X, y)

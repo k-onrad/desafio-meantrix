@@ -11,31 +11,16 @@ output:
 knitr::opts_chunk$set(echo = T)
 ```
 
-## Pré-processamento
-Começamos carregando pacotes que iremos utilizar e importando os dados para pré-processamento.
+## Análise exploratória
+Começamos carregando pacotes que iremos utilizar e importando os dados para análise.
 ```{r message=FALSE}
 library(readr)
 library(caret)
 library(e1071)
 library(ggplot2)
 library(corrplot)
-HR_Employee <- read_csv("HR-Employee.csv")
+HR_Employee <- read_csv("../data/HR-Employee.csv")
 summary(HR_Employee)
-```
-
-
-### Codificação
-Uma rápida inspeção revela que várias váriaveis independentes são categóricas e precisam ser codificadas para dummy variables. A função dummyVars do pacote caret ajuda a codificar rapidamente o dataframe, com exceção da variável Over18 que precisa ser codificada manualmente por ter apenas uma categoria.
-
-```{r}
-HR_Employee$Over18 <- ifelse(HR_Employee$Over18 == "Y", 1, 0)
-```
-
-Para codificar o restante evitando colinearidade perfeita, usamos dummyVars com fullRank = T.
-```{r}
-dmy <- dummyVars("~.", HR_Employee, fullRank=T)
-enc_HR <- data.frame(predict(dmy, HR_Employee))
-colnames(enc_HR)
 ```
 
 
@@ -57,7 +42,7 @@ colnames(enc_HR)
 Podemos analisar correlações entre variáveis independentes e a variável dependente AttritionYes.
 ```{r}
 correlations <- cor(enc_HR)
-attrition_corrs <- correlations["AttritionYes",][-2] # removendo autocorrelação
+attrition_corrs <- correlations["Attrition",][-2] # removendo autocorrelação
 attrition_corrs
 max(attrition_corrs)
 min(attrition_corrs)
