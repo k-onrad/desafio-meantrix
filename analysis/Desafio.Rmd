@@ -25,22 +25,19 @@ summary(HR_Employee)
 
 
 ### Variâncias próximas de zero
-Com as variáveis categóricas codificadas, podemos identificar correlações entre variáveis independentes. Antes disso, no entanto, vamos utilizar a função nearZeroVar do pacote caret para identificar se, além da variável Over18, temos outras variáveis com apenas um valor único.
+Com as variáveis categóricas codificadas, podemos identificar correlações entre variáveis independentes. Antes disso, no entanto, vamos utilizar a função nearZeroVar do pacote caret para identificar se temos variáveis com apenas um valor único. 
 ```{r}
 zeroVars <- nearZeroVar(HR_Employee)
 summary(HR_Employee[zeroVars])
+HR_Employee <- HR_Employee[-zeroVars]
 ```
 
-A função nearZeroVar identifica, de maneira geral, variáveis com variância próxima de zero (que portanto adicionam pouca ou nenhuma informação adicional ao modelo). Podemos ver acima que a variável JobRoleHuman.Resources, possui variância baixa, mas não nula. Vamos remover apenas as features constantes.
-```{r}
-HR_Employee <- HR_Employee[-zeroVars]
-colnames(HR_Employee)
-```
+A função nearZeroVar identifica, de maneira geral, variáveis com variância próxima de zero. Tais variáveis, que adicionam pouca ou nenhuma informação ao modelo, podem ser descartadas para melhorar a performance no treinamento. Podemos ver acima que as variáveis identificadas possuem variância nula, e portanto poderiam proveitosamente ser descartadas. Caso houvessem variáveis com variância baixa, mas não nula, seu descarte deve ser considerado com cuidado.
 
 ### Correlações
 Podemos analisar correlações entre variáveis independentes e a variável dependente Attrition, mas antes precisamos gerar dummy variables.
 ```{r}
-dmy <- dummyVars("~.", HR_Employee, fullRank=T)
+dmy <- dummyVars("~ .", HR_Employee, fullRank=T)
 enc_HR <- data.frame(predict(dmy, HR_Employee))
 correlations <- cor(enc_HR)
 attrition_corrs <- correlations["AttritionYes",][-2] # removendo autocorrelação
@@ -51,13 +48,13 @@ min(attrition_corrs)
 
 Muitas variáveis parecem contribuir em alguma medida para a variação em AttritionYes, com a variável OverTimeYes tendo a maior correlação positiva - indicando que sobrecarregamento do funcionário pode ser um dos principais fatores para a saída do mesmo - e a variável TotalWorkingYears tendo a maior correlação negativa - indicando que funcionários que estão à mais tempo no mercado de trabalho podem ter menor disposição à sair do seu emprego atual.
 
-Podemos também plotar clusters de variáveis correlacionadas utilizando o pacote corrplot. Exportamos para png para melhor visualização.
+Podemos também plotar clusters de variáveis correlacionadas utilizando o pacote corrplot. Exportamos a imagem para um arquivo png para melhor visualização.
 ```{r fig.height=12, fig.width=21}
 corrMatrix <- corrplot(correlations, order="hclust", tl.cex=1)
-png("corrplot.png", width=1920, height=1080, units="px")
+dev.print(file="corrplot.png", device=png, width=1920, height=1080)
 ```
 
-Identificamos correlações esperadas entre variáveis que indicam o tempo corrido desde algum evento (anos na companhia, anos desde a última promoção, etc). Correlações entre idade, tempo no mercado de trabalho e salário mensal também não são inesperadas. Caso tais correlações venham a ser problemáticas, ou caso queiramos experimentar com o modelo, podemos aplicar Principal Component Analysis para gerar features independentes entre si. No momento seguiremos com as features como estão.
+Identificamos correlações esperadas entre variáveis que indicam o tempo corrido desde algum evento (anos desde que entrou na companhia, anos desde a última promoção, etc). Correlações entre idade, tempo no mercado de trabalho e salário mensal também não são inesperadas. Caso tais correlações venham a ser problemáticas (como podem ser no caso de modelos lineares), ou caso queiramos otimizar o modelo, podemos aplicar Principal Component Analysis para gerar features independentes entre si.
 
 ### Assimetria
 Para verificar se temos features com distribuições assimétricas, utilizamos a função skewness do pacote e1071.
@@ -75,23 +72,9 @@ ggplot(enc_HR, aes(x = AttritionYes)) +
   xlab("Attrition igual a 'Yes'") +
   ylab("Frequências relativas") +
   ggtitle("Frequência de Attrition igual a 'Yes'")
+dev.print(file="attrition.png", device=png, width=800)
 ```
 
-Fica evidente que Attrition é igual a "Yes" (ou AttritionYes == 1) em apenas 16% da população. Um algoritmo que estimasse Attrition = "No" para todo e qualquer caso teria, portanto, uma exatidão próxima de 84% neste dataset. 
+Fica evidente que Attrition é igual a "Yes" (ou AttritionYes == 1) em apenas 16% da população. Um algoritmo que estimasse Attrition = "No" para todo e qualquer caso teria, portanto, uma exatidão próxima de 84% neste dataset. Dada tal assimetria, podemos inferir que uma medida de performance baseada não na exatidão, mas na precisão e recall (identificação correta de negativos e positivos vs. falsos negativos e falsos positivos), como a estatística F1 (média harmônica entre precisão e recall), pode representar melhor a qualidade do modelo.
 
-Na presença de variáveis com distribuições altamente assimétricas, poderíamos, caso fosse conveniente, aplicar a transformação Box-Cox para corrigir tal assimetria. Deixaremos nossas variáveis como estão em relação à sua simetria.
-
-### Centralização e normalização
-Por fim, vamos centralizar e normalizar o dataset para obter melhor comportamento em relação à certos algoritmos (por exemplo, algoritmos que envolvam otimização com método de gradiente ou similar).
-```{r message=FALSE}
-transform <- preProcess(enc_HR, method=c("center", "scale"))
-transformed_HR <- predict(transform, enc_HR)
-```
-
-
-### Exportando
-Podemos então exportar os dados para o formato csv, para continuar a modelagem em Python.
-```{r}
-write_csv(transformed_HR, "transformed_HR.csv")
-```
-
+Além disso, na presença de variáveis com distribuições altamente assimétricas, poderíamos, caso fosse conveniente, aplicar a transformação Box-Cox no pré-processamento dos dados para corrigir tal assimetria.

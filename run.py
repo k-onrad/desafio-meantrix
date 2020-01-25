@@ -43,7 +43,7 @@ def runAll(X, y, scaler=StandardScaler):
     # Multi-layer Perceptron Classifier da library sklearn
     clear()
     fitMLP(X_train, X_test, y_train, y_test, score)
-    input("Pressione [ENTER] to continuar...\n")
+    input("Pressione [ENTER] para continuar...\n")
 
     # Support Vector Classifier da library sklearn
     clear()

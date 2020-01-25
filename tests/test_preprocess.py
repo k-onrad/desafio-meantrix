@@ -7,7 +7,9 @@ from models.preprocess import preprocessCsv
 
 class TestPreprocessCSV(unittest.TestCase):
     def setUp(self):
-        self.path = os.path.join(os.path.dirname(__file__), "..", "HR-Employee.csv")
+        self.path = os.path.join(
+            os.path.dirname(__file__), "..", "data", "HR-Employee.csv"
+        )
 
     def test_data_is_numpy_array(self):
         (X, y) = preprocessCsv(self.path)
