@@ -72,7 +72,7 @@ class LogisticRegression(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predictProb(self, X):
+    def predict_proba(self, X):
         check_is_fitted(self)
         X = check_array(X)
 
@@ -84,4 +84,4 @@ class LogisticRegression(BaseEstimator, ClassifierMixin):
     def predict(self, X, threshold=0.5):
         check_is_fitted(self)
         X = check_array(X)
-        return self.predictProb(X) >= threshold
+        return self.predict_proba(X) >= threshold

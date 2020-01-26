@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.decomposition import PCA
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, RepeatedStratifiedKFold
 from sklearn.linear_model import LogisticRegression as SkLinearRegression
 from sklearn.metrics import classification_report
 
@@ -25,15 +25,18 @@ def fitSkLogistic(X_train, X_test, y_train, y_test, score):
     }
 
     # Buscando parâmetros ótimos via brute force, com Logistic Regression como algoritmo de aprendizado.
-    # CV = 10 define que o training set deve ser dividido 10 vezes entre training e cross validation (k-Fold CV).
-    # Por default, a função utiliza k-Fold CV estratificado, mantendo proporção entre classes de outcomes (no caso, 0/1).
+    # CV = 10 define que o training set deve ser dividido entre 1/9 training e cross validation (k-Fold CV) por 10 vezes.
+    # Para diminuir a variância no resultado, repetimos a 10-fold Cross-Validation por 5 vezes (n_repeats=5).
+    # A função utiliza k-Fold CV estratificado, mantendo proporção entre classes de outcomes (no caso, 0/1).
+    rkfold = RepeatedStratifiedKFold(n_splits=10, n_repeats=5, random_state=42)
+
     print("Iniciando treinamento de Regressor Logístico (SKLearn)")
     print(f"Otimizando parâmetros em relação ao score {score}\n")
     clf = GridSearchCV(
         estimator=pipe,
         param_grid=param_grid,
         n_jobs=-1,
-        cv=10,
+        cv=rkfold,
         scoring=f"{score}",
         verbose=1,
     )
@@ -44,6 +47,8 @@ def fitSkLogistic(X_train, X_test, y_train, y_test, score):
 
     print("\nScores no test set:")
     print(classification_report(y_test, clf.predict(X_test), zero_division=0))
+
+    return clf
 
 
 def fitCustomLogistic(X_train, X_test, y_train, y_test, score):
@@ -60,19 +65,22 @@ def fitCustomLogistic(X_train, X_test, y_train, y_test, score):
     param_grid = {
         "pca__n_components": [None]
         + [int(X_test.shape[1] - i) for i in [*range(1, 10)]],
-        "lr__lmbda": np.logspace(-10, -4, 13),
+        "lr__lmbda": np.logspace(-5, 1, 13),
     }
 
     # Buscando parâmetros ótimos via brute force, com Logistic Regression como algoritmo de aprendizado.
-    # CV = 10 define que o training set deve ser dividido 10 vezes entre training e cross validation (k-Fold CV).
-    # Por default, a função utiliza k-Fold CV estratificado, mantendo proporção entre classes de outcomes (no caso, 0/1).
+    # CV = 10 define que o training set deve ser dividido entre 1/9 training e cross validation (k-Fold CV) por 10 vezes.
+    # Para diminuir a variância no resultado, repetimos a 10-fold Cross-Validation por 5 vezes (n_repeats=5).
+    # A função utiliza k-Fold CV estratificado, mantendo proporção entre classes de outcomes (no caso, 0/1).
+    rkfold = RepeatedStratifiedKFold(n_splits=10, n_repeats=5, random_state=42)
+
     print("Iniciando treinamento de Regressor Logístico (Gradient Descent / Numpy)")
     print(f"Otimizando parâmetros em relação ao score {score}\n")
     clf = GridSearchCV(
         estimator=pipe,
         param_grid=param_grid,
         n_jobs=-1,
-        cv=10,
+        cv=rkfold,
         scoring=f"{score}",
         verbose=1,
     )
@@ -83,3 +91,5 @@ def fitCustomLogistic(X_train, X_test, y_train, y_test, score):
 
     print("\nScores no test set:")
     print(classification_report(y_test, clf.predict(X_test), zero_division=0))
+
+    return clf
